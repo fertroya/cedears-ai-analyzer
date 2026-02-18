@@ -5,6 +5,7 @@ Herramienta de análisis de inversión en CEDEARS usando IA para generar recomen
 ## Características
 
 - 📊 Análisis automático de los CEDEARS más líquidos del mercado argentino
+- 🔌 **Integración con Portfolio Personal API** - Datos reales de mercado
 - 🤖 Análisis con IA de tendencias, indicadores técnicos y contexto de mercado
 - 📈 Recomendaciones semanales de COMPRAR/VENDER/MANTENER
 - 📧 Envío automático de reportes por email
@@ -13,8 +14,9 @@ Herramienta de análisis de inversión en CEDEARS usando IA para generar recomen
 ## Requisitos
 
 - Python 3.9+
-- Acceso a internet para web scraping
+- Acceso a internet para datos de mercado
 - **Ollama** (instalación automática incluida) - 100% gratis, corre localmente
+- **Portfolio Personal API** (opcional pero recomendado) - Para datos reales de CEDEARS
 - Credenciales SMTP para envío de emails
 
 ### 🤖 IA con Ollama (Por Defecto)
@@ -86,15 +88,29 @@ Descarga desde [ollama.com/download](https://ollama.com/download) e instala manu
    - Si prefieres otro proveedor, edita `config/config.yaml` y cambia `ai.api_provider`
 
 2. Copia `.env.example` a `.env` y completa las variables:
+   - `PORTFOLIO_PERSONAL_API_KEY` y `PORTFOLIO_PERSONAL_API_SECRET` (para datos reales de CEDEARS)
    - `SENDER_EMAIL` y `SENDER_PASSWORD` (SMTP para envío de reportes)
    - `RECIPIENT_EMAIL` (donde recibirás los reportes)
    - Solo necesitas API keys si cambias el proveedor de IA
 
 3. Edita `config/config.yaml` (opcional):
+   - `scraping.data_source`: "portfolio_personal" (datos reales) o "investing" (simulado)
    - `ai.model`: Cambia el modelo de Ollama si lo deseas (por defecto: "llama3")
    - Otros parámetros de análisis según tus preferencias
 
 4. Revisa `config/cedears_list.yaml` para ajustar la lista de CEDEARS a analizar
+
+### Configuración de Portfolio Personal (Recomendado)
+
+Para obtener datos reales de CEDEARS, configura Portfolio Personal API:
+
+1. Lee [docs/PORTFOLIO_PERSONAL_SETUP.md](docs/PORTFOLIO_PERSONAL_SETUP.md) para instrucciones detalladas
+2. Agrega tus credenciales en `.env`:
+   ```bash
+   PORTFOLIO_PERSONAL_API_KEY=dE1pb1RHeWZDdkVtUEVaM3FHS2Y=
+   PORTFOLIO_PERSONAL_API_SECRET=tu_api_secret_aqui
+   ```
+3. El sistema usará automáticamente Portfolio Personal si las credenciales están configuradas
 
 ## Uso
 
