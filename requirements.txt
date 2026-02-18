@@ -13,8 +13,10 @@ pandas-ta==0.3.14b0
 sqlalchemy==2.0.23
 alembic==1.12.1
 
-# AI/ML
-openai==1.3.5
+# AI/ML - Múltiples proveedores soportados
+openai==1.3.5  # Para OpenAI (pago)
+google-generativeai==0.3.2  # Para Google Gemini (GRATIS)
+requests==2.31.0  # Para Ollama y Hugging Face (ya incluido arriba)
 
 # Email
 smtplib  # Built-in

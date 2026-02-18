@@ -14,8 +14,17 @@ Herramienta de análisis de inversión en CEDEARS usando IA para generar recomen
 
 - Python 3.9+
 - Acceso a internet para web scraping
-- API key de Cursor/OpenAI para análisis con IA
+- **API key gratuita** (Google Gemini recomendado) o API key de OpenAI
 - Credenciales SMTP para envío de emails
+
+### 🆓 Opciones Gratuitas de IA
+
+Este proyecto soporta múltiples proveedores de IA **gratuitos**:
+- **Google Gemini** (recomendado) - Gratis, sin tarjeta de crédito
+- **Ollama** - Gratis, corre localmente
+- **Hugging Face** - Gratis con límites
+
+Ver [docs/API_KEYS_SETUP.md](docs/API_KEYS_SETUP.md) para instrucciones detalladas.
 
 ## Instalación
 
@@ -38,14 +47,20 @@ cp .env.example .env
 
 ## Configuración
 
-1. Copia `.env.example` a `.env` y completa las variables:
-   - `CURSOR_API_KEY` o `OPENAI_API_KEY`
+1. **Configura tu API de IA (GRATIS recomendado)**:
+   - Lee [docs/API_KEYS_SETUP.md](docs/API_KEYS_SETUP.md) para opciones gratuitas
+   - **Opción rápida**: Obtén tu API key de Google Gemini en [aistudio.google.com](https://aistudio.google.com/)
+
+2. Copia `.env.example` a `.env` y completa las variables:
+   - `GEMINI_API_KEY` (recomendado - gratis) o `OPENAI_API_KEY`
    - `SENDER_EMAIL` y `SENDER_PASSWORD` (SMTP)
    - `RECIPIENT_EMAIL`
 
-2. Edita `config/config.yaml` según tus preferencias
+3. Edita `config/config.yaml`:
+   - Configura `ai.api_provider` según tu elección (por defecto: "gemini")
+   - Ajusta otros parámetros según tus preferencias
 
-3. Revisa `config/cedears_list.yaml` para ajustar la lista de CEDEARS a analizar
+4. Revisa `config/cedears_list.yaml` para ajustar la lista de CEDEARS a analizar
 
 ## Uso
 
