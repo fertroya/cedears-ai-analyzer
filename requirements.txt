@@ -29,6 +29,9 @@ weasyprint==60.1
 pyyaml==6.0.1
 python-dotenv==1.0.0
 
+# HTTP requests (para Ollama y otros)
+requests==2.31.0  # Ya incluido arriba, pero explícito para Ollama
+
 # Scheduling
 schedule==1.2.0
 

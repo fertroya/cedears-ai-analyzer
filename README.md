@@ -14,15 +14,25 @@ Herramienta de análisis de inversión en CEDEARS usando IA para generar recomen
 
 - Python 3.9+
 - Acceso a internet para web scraping
-- **API key gratuita** (Google Gemini recomendado) o API key de OpenAI
+- **Ollama** (instalación automática incluida) - 100% gratis, corre localmente
 - Credenciales SMTP para envío de emails
 
-### 🆓 Opciones Gratuitas de IA
+### 🤖 IA con Ollama (Por Defecto)
 
-Este proyecto soporta múltiples proveedores de IA **gratuitos**:
-- **Google Gemini** (recomendado) - Gratis, sin tarjeta de crédito
-- **Ollama** - Gratis, corre localmente
+Este proyecto usa **Ollama** por defecto, que es:
+- ✅ **100% gratis** - Sin límites ni costos
+- ✅ **Privacidad total** - Corre completamente local
+- ✅ **Instalación automática** - El proyecto se encarga de instalarlo
+- ✅ **Sin API keys** - No necesitas credenciales externas
+
+Ollama se instalará automáticamente la primera vez que ejecutes el proyecto.
+
+### 🔄 Otras Opciones de IA
+
+También puedes usar otros proveedores editando `config/config.yaml`:
+- **Google Gemini** - Gratis, sin tarjeta de crédito
 - **Hugging Face** - Gratis con límites
+- **OpenAI** - Pago
 
 Ver [docs/API_KEYS_SETUP.md](docs/API_KEYS_SETUP.md) para instrucciones detalladas.
 
@@ -37,28 +47,52 @@ cd cedears-ai-analyzer
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 
-# Instalar dependencias
+# Instalar dependencias Python
 pip install -r requirements.txt
+
+# Instalar y configurar Ollama (automático)
+bash scripts/setup_ollama.sh
 
 # Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus credenciales
+# Editar .env con tus credenciales de email (SMTP)
 ```
+
+### Instalación Rápida de Ollama
+
+Si prefieres instalar Ollama manualmente:
+
+**macOS:**
+```bash
+brew install ollama
+ollama serve  # Iniciar servicio
+ollama pull llama3  # Descargar modelo por defecto
+```
+
+**Linux:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama serve  # Iniciar servicio
+ollama pull llama3  # Descargar modelo por defecto
+```
+
+**Windows:**
+Descarga desde [ollama.com/download](https://ollama.com/download) e instala manualmente.
 
 ## Configuración
 
-1. **Configura tu API de IA (GRATIS recomendado)**:
-   - Lee [docs/API_KEYS_SETUP.md](docs/API_KEYS_SETUP.md) para opciones gratuitas
-   - **Opción rápida**: Obtén tu API key de Google Gemini en [aistudio.google.com](https://aistudio.google.com/)
+1. **Ollama está configurado por defecto** - No necesitas API keys
+   - El proyecto verificará e instalará Ollama automáticamente al ejecutar
+   - Si prefieres otro proveedor, edita `config/config.yaml` y cambia `ai.api_provider`
 
 2. Copia `.env.example` a `.env` y completa las variables:
-   - `GEMINI_API_KEY` (recomendado - gratis) o `OPENAI_API_KEY`
-   - `SENDER_EMAIL` y `SENDER_PASSWORD` (SMTP)
-   - `RECIPIENT_EMAIL`
+   - `SENDER_EMAIL` y `SENDER_PASSWORD` (SMTP para envío de reportes)
+   - `RECIPIENT_EMAIL` (donde recibirás los reportes)
+   - Solo necesitas API keys si cambias el proveedor de IA
 
-3. Edita `config/config.yaml`:
-   - Configura `ai.api_provider` según tu elección (por defecto: "gemini")
-   - Ajusta otros parámetros según tus preferencias
+3. Edita `config/config.yaml` (opcional):
+   - `ai.model`: Cambia el modelo de Ollama si lo deseas (por defecto: "llama3")
+   - Otros parámetros de análisis según tus preferencias
 
 4. Revisa `config/cedears_list.yaml` para ajustar la lista de CEDEARS a analizar
 

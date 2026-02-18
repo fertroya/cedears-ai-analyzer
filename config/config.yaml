@@ -5,19 +5,22 @@ scraping:
   user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 ai:
-  # Opciones: "gemini" (GRATIS - recomendado), "ollama" (GRATIS local), "openai" (pago), "huggingface" (GRATIS con límites)
-  api_provider: "gemini"  # "gemini", "ollama", "openai", "huggingface"
+  # Ollama es el proveedor por defecto (100% gratis, corre localmente)
+  # Opciones: "ollama" (GRATIS local - por defecto), "gemini" (GRATIS), "openai" (pago), "huggingface" (GRATIS con límites)
+  api_provider: "ollama"  # "ollama", "gemini", "openai", "huggingface"
   # Modelos según proveedor:
+  # - ollama: "llama3" (por defecto), "mistral", "codellama", "llama3.2" (requiere instalación local)
   # - gemini: "gemini-1.5-flash" (gratis) o "gemini-2.5-flash"
-  # - ollama: "llama3", "mistral", "codellama" (requiere instalación local)
   # - openai: "gpt-4", "gpt-3.5-turbo"
   # - huggingface: cualquier modelo de Hugging Face
-  model: "gemini-1.5-flash"
+  model: "llama3"  # Modelo por defecto de Ollama
   temperature: 0.7
   max_tokens: 2000
   timeout: 30
-  # Para Ollama (si api_provider == "ollama")
+  # Configuración de Ollama
   ollama_base_url: "http://localhost:11434"
+  ollama_auto_install: true  # Instalar Ollama automáticamente si no está presente
+  ollama_auto_download_model: true  # Descargar modelo automáticamente si no está presente
 
 email:
   smtp_server: "smtp.gmail.com"
