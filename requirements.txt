@@ -7,7 +7,7 @@ lxml==4.9.3
 # Data Processing
 pandas==2.1.3
 numpy==1.26.2
-pandas-ta==0.3.14b0
+# pandas-ta removed - we calculate indicators manually
 
 # Database
 sqlalchemy==2.0.23
@@ -19,7 +19,7 @@ google-generativeai==0.3.2  # Para Google Gemini (GRATIS)
 requests==2.31.0  # Para Ollama y Hugging Face (ya incluido arriba)
 
 # Email
-smtplib  # Built-in
+# smtplib is built-in, no need to install
 
 # Report Generation
 jinja2==3.1.2

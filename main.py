@@ -71,15 +71,151 @@ def main():
                 logger.error("O instala Ollama manualmente desde https://ollama.com")
                 sys.exit(1)
         
-        # TODO: Implement main workflow
-        # 1. Collect data
-        # 2. Process data
-        # 3. AI analysis
-        # 4. Generate report
-        # 5. Send email
+        # Cargar lista de CEDEARS
+        logger.info("Cargando lista de CEDEARS...")
+        cedears_list_path = Path(__file__).parent / "config" / "cedears_list.yaml"
+        with open(cedears_list_path, 'r') as f:
+            cedears_config = yaml.safe_load(f)
         
-        logger.info("Analysis workflow will be implemented in next steps")
-        logger.info("=" * 60)
+        cedears = [c['ticker'] for c in cedears_config.get('cedears', []) if c.get('priority') in ['high', 'medium']]
+        logger.info(f"Analizando {len(cedears)} CEDEARS: {', '.join(cedears[:10])}...")
+        
+        # 1. Recolectar datos
+        logger.info("\n" + "="*60)
+        logger.info("PASO 1: Recolectando datos de mercado...")
+        logger.info("="*60)
+        
+        from src.data_collector.scrapers.investing_scraper import InvestingScraper
+        from src.data_collector.scrapers.news_scraper import NewsScraper
+        
+        scraper = InvestingScraper(
+            delay=config.get('scraping', {}).get('delay_between_requests', 2)
+        )
+        news_scraper = NewsScraper()
+        
+        # Obtener contexto de mercado
+        market_context = news_scraper.get_market_context()
+        logger.info(f"Contexto de mercado obtenido: Dólar MEP=${market_context.get('dolar_mep')}, Riesgo País={market_context.get('riesgo_pais')}")
+        
+        # 2. Procesar datos y generar análisis técnico
+        logger.info("\n" + "="*60)
+        logger.info("PASO 2: Procesando datos y calculando indicadores técnicos...")
+        logger.info("="*60)
+        
+        from src.data_processor.price_analyzer import PriceAnalyzer
+        
+        analyzer = PriceAnalyzer(config.get('analysis', {}))
+        all_analyses = []
+        all_news = {}
+        
+        for ticker in cedears:
+            try:
+                logger.info(f"Analizando {ticker}...")
+                # Obtener datos históricos
+                price_data = scraper.get_cedear_history(ticker, days=config.get('analysis', {}).get('lookback_days', 60))
+                
+                # Analizar
+                analysis = analyzer.analyze(ticker, price_data)
+                all_analyses.append(analysis)
+                
+                # Obtener noticias
+                news = news_scraper.get_cedear_news(ticker)
+                all_news[ticker] = news
+                
+            except Exception as e:
+                logger.error(f"Error analizando {ticker}: {e}")
+                continue
+        
+        logger.info(f"Análisis completado para {len(all_analyses)} CEDEARS")
+        
+        # 3. Generar recomendaciones con IA
+        logger.info("\n" + "="*60)
+        logger.info("PASO 3: Generando recomendaciones con IA...")
+        logger.info("="*60)
+        
+        from src.ai_analyzer.recommendation_engine import RecommendationEngine
+        
+        recommendation_engine = RecommendationEngine(config)
+        recommendations = []
+        
+        for analysis in all_analyses:
+            ticker = analysis['ticker']
+            try:
+                logger.info(f"Generando recomendación para {ticker}...")
+                recommendation = recommendation_engine.analyze_cedear(
+                    ticker=ticker,
+                    analysis_data=analysis,
+                    news=all_news.get(ticker, []),
+                    market_context=market_context
+                )
+                recommendations.append(recommendation)
+                logger.info(f"  → {ticker}: {recommendation.get('action')} (confianza: {recommendation.get('confidence', 0):.0%})")
+            except Exception as e:
+                logger.error(f"Error generando recomendación para {ticker}: {e}")
+                continue
+        
+        logger.info(f"Recomendaciones generadas: {len(recommendations)}")
+        
+        # 4. Generar reporte
+        logger.info("\n" + "="*60)
+        logger.info("PASO 4: Generando reporte...")
+        logger.info("="*60)
+        
+        from src.report_generator.report_builder import ReportBuilder
+        
+        report_builder = ReportBuilder()
+        html_report = report_builder.build_report(
+            recommendations=recommendations,
+            market_context=market_context,
+            date=datetime.now()
+        )
+        
+        # Guardar reporte HTML
+        reports_dir = Path(__file__).parent / "reports"
+        reports_dir.mkdir(exist_ok=True)
+        report_file = reports_dir / f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        with open(report_file, 'w', encoding='utf-8') as f:
+            f.write(html_report)
+        
+        logger.info(f"Reporte guardado en: {report_file}")
+        
+        # 5. Enviar email (si está configurado)
+        logger.info("\n" + "="*60)
+        logger.info("PASO 5: Enviando reporte por email...")
+        logger.info("="*60)
+        
+        from src.email_service.email_sender import EmailSender
+        
+        email_sender = EmailSender(config)
+        email_config = config.get('email', {})
+        subject = email_config.get('subject_template', 'Análisis Semanal de CEDEARS - {date}').format(
+            date=datetime.now().strftime('%d/%m/%Y')
+        )
+        
+        email_sent = email_sender.send_report(
+            html_content=html_report,
+            subject=subject
+        )
+        
+        if email_sent:
+            logger.info("✓ Email enviado exitosamente")
+        else:
+            logger.warning("⚠ Email no enviado (verificar configuración SMTP)")
+        
+        # Resumen final
+        logger.info("\n" + "="*60)
+        logger.info("RESUMEN DEL ANÁLISIS")
+        logger.info("="*60)
+        buy_count = len([r for r in recommendations if r.get('action') == 'COMPRAR'])
+        sell_count = len([r for r in recommendations if r.get('action') == 'VENDER'])
+        hold_count = len([r for r in recommendations if r.get('action') == 'MANTENER'])
+        
+        logger.info(f"Total analizado: {len(recommendations)} CEDEARS")
+        logger.info(f"  🟢 COMPRAR: {buy_count}")
+        logger.info(f"  🔴 VENDER: {sell_count}")
+        logger.info(f"  🟡 MANTENER: {hold_count}")
+        logger.info(f"Reporte guardado en: {report_file}")
+        logger.info("="*60)
         logger.info("Execution completed successfully")
         
     except Exception as e:
