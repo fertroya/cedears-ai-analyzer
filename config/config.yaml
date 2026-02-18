@@ -1,0 +1,40 @@
+scraping:
+  investing_url: "https://www.investing.com/equities/argentina"
+  retry_attempts: 3
+  delay_between_requests: 2
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+
+ai:
+  api_provider: "openai"  # "cursor" or "openai"
+  model: "gpt-4"
+  temperature: 0.7
+  max_tokens: 2000
+  timeout: 30
+
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  use_tls: true
+  subject_template: "Análisis Semanal de CEDEARS - {date}"
+
+database:
+  type: "sqlite"  # "sqlite" or "postgresql"
+  path: "data/cedears.db"
+
+scheduler:
+  day_of_week: "monday"
+  time: "09:00"
+  timezone: "America/Argentina/Buenos_Aires"
+
+analysis:
+  lookback_days: 60
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  moving_averages: [20, 50, 200]
+
+risk_profile:
+  type: "moderate_to_risky"
+  max_positions_recommend: 10
+  min_confidence_score: 0.6
