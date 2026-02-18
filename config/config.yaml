@@ -10,7 +10,7 @@ scraping:
   portfolio_personal:
     base_url: "https://clientapi.portfoliopersonal.com"
     sandbox_url: "https://clientapi_sandbox.portfoliopersonal.com"
-    use_sandbox: false
+    use_sandbox: true  # Cambiar a false para producción
     api_version: "1.0"
     settlement: "INMEDIATA"  # INMEDIATA, A-24HS, A-48HS, A-72HS
 

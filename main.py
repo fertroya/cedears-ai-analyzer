@@ -99,29 +99,42 @@ def main():
             pp_config = scraping_config.get('portfolio_personal', {})
             
             api_key = os.getenv('PORTFOLIO_PERSONAL_API_KEY')
-            api_secret = os.getenv('PORTFOLIO_PERSONAL_API_SECRET')
+            api_secret = os.getenv('PORTFOLIO_PERSONAL_API_SECRET')  # Opcional
             authorized_client = os.getenv('PORTFOLIO_PERSONAL_AUTHORIZED_CLIENT', 'API_CLI_REST')
             client_key = os.getenv('PORTFOLIO_PERSONAL_CLIENT_KEY', 'pp19CliApp12')
             
-            if not all([api_key, api_secret]):
+            if not api_key:
                 logger.error("Credenciales de Portfolio Personal no configuradas en .env")
-                logger.error("Configura PORTFOLIO_PERSONAL_API_KEY y PORTFOLIO_PERSONAL_API_SECRET")
+                logger.error("Configura PORTFOLIO_PERSONAL_API_KEY (requerido)")
+                logger.error("PORTFOLIO_PERSONAL_API_SECRET es opcional pero recomendado para login completo")
                 sys.exit(1)
+            
+            use_sandbox = pp_config.get('use_sandbox', False)
+            if use_sandbox:
+                logger.info("Usando entorno SANDBOX de Portfolio Personal")
+                # Valores por defecto para sandbox si no están configurados
+                if not authorized_client or authorized_client == 'API_CLI_REST':
+                    authorized_client = os.getenv('PORTFOLIO_PERSONAL_AUTHORIZED_CLIENT', 'API_CLI_REST')
+                if not client_key or client_key == 'pp19CliApp12':
+                    client_key = os.getenv('PORTFOLIO_PERSONAL_CLIENT_KEY', 'ppApiCliSB')
             
             scraper = PortfolioPersonalClient(
                 api_key=api_key,
-                api_secret=api_secret,
                 authorized_client=authorized_client,
                 client_key=client_key,
+                api_secret=api_secret,  # Opcional
                 base_url=pp_config.get('base_url', 'https://clientapi.portfoliopersonal.com'),
                 api_version=pp_config.get('api_version', '1.0'),
-                use_sandbox=pp_config.get('use_sandbox', False)
+                use_sandbox=use_sandbox
             )
             
-            # Intentar login
-            if not scraper.login():
-                logger.error("No se pudo autenticar en Portfolio Personal API")
-                sys.exit(1)
+            # Intentar login solo si hay ApiSecret
+            if api_secret:
+                if not scraper.login():
+                    logger.warning("No se pudo autenticar en Portfolio Personal API, pero continuando...")
+                    logger.warning("Algunos endpoints pueden funcionar sin login completo")
+            else:
+                logger.info("ApiSecret no configurado. Usando endpoints que no requieren autenticación completa.")
         else:
             logger.info("Usando Investing.com como fuente de datos (simulado)")
             scraper = InvestingScraper(

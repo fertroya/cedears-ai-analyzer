@@ -5,9 +5,13 @@ Cliente para obtener datos de CEDEARS desde Portfolio Personal API.
 import requests
 import logging
 import time
+import urllib3
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import pandas as pd
+
+# Deshabilitar warnings de SSL para sandbox
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +22,9 @@ class PortfolioPersonalClient:
     def __init__(
         self,
         api_key: str,
-        api_secret: str,
         authorized_client: str,
         client_key: str,
+        api_secret: Optional[str] = None,
         base_url: str = "https://clientapi.portfoliopersonal.com",
         api_version: str = "1.0",
         use_sandbox: bool = False
@@ -30,9 +34,9 @@ class PortfolioPersonalClient:
         
         Args:
             api_key: ApiKey (Public Key)
-            api_secret: ApiSecret (Private Key)
             authorized_client: AuthorizedClient (ej: "API_CLI_REST")
-            client_key: ClientKey (ej: "pp19CliApp12")
+            client_key: ClientKey (ej: "pp19CliApp12" o "ppApiCliSB" para sandbox)
+            api_secret: ApiSecret (Private Key) - Opcional, solo necesario para login completo
             base_url: URL base de la API
             api_version: Versión de la API (default: "1.0")
             use_sandbox: Si True, usa sandbox URL
@@ -53,13 +57,20 @@ class PortfolioPersonalClient:
         self.refresh_token = None
         self.token_expires_at = None
         
-        # Headers comunes
-        self.session.headers.update({
+        # Para sandbox, deshabilitar verificación SSL si hay problemas de certificado
+        if use_sandbox:
+            self.session.verify = False
+        
+        # Headers comunes - solo incluir ApiSecret si está presente
+        headers = {
             'AuthorizedClient': self.authorized_client,
             'ClientKey': self.client_key,
-            'ApiKey': self.api_key,
-            'ApiSecret': self.api_secret
-        })
+            'ApiKey': self.api_key
+        }
+        if self.api_secret:
+            headers['ApiSecret'] = self.api_secret
+        
+        self.session.headers.update(headers)
     
     def _get_headers(self) -> Dict[str, str]:
         """Obtiene headers para requests autenticados."""
@@ -78,12 +89,28 @@ class PortfolioPersonalClient:
         Inicia sesión y obtiene token de acceso.
         
         Returns:
-            True si el login fue exitoso
+            True si el login fue exitoso, False si falla o si no hay ApiSecret
         """
+        # Si no hay ApiSecret, no podemos hacer login completo
+        # Algunos endpoints pueden funcionar sin login
+        if not self.api_secret:
+            logger.warning("ApiSecret no configurado. Algunos endpoints pueden funcionar sin login completo.")
+            return False
+        
         try:
             url = f"{self.base_url}/api/{self.api_version}/Account/LoginApi"
             
-            response = self.session.post(url, timeout=10)
+            # Headers para login (necesita ApiSecret)
+            login_headers = {
+                'AuthorizedClient': self.authorized_client,
+                'ClientKey': self.client_key,
+                'ApiKey': self.api_key,
+                'ApiSecret': self.api_secret
+            }
+            
+            # Usar verificación SSL según configuración de la sesión
+            verify_ssl = self.session.verify if hasattr(self.session, 'verify') else True
+            response = requests.post(url, headers=login_headers, timeout=10, verify=verify_ssl)
             response.raise_for_status()
             
             data = response.json()
@@ -107,7 +134,14 @@ class PortfolioPersonalClient:
             return False
     
     def _ensure_authenticated(self) -> bool:
-        """Asegura que hay una sesión activa."""
+        """
+        Asegura que hay una sesión activa.
+        Si no hay ApiSecret, retorna True ya que algunos endpoints funcionan sin login.
+        """
+        # Si no hay ApiSecret, no podemos hacer login pero algunos endpoints funcionan sin él
+        if not self.api_secret:
+            return True
+        
         if not self.access_token or (self.token_expires_at and datetime.now() >= self.token_expires_at):
             return self.login()
         return True
@@ -123,9 +157,8 @@ class PortfolioPersonalClient:
         Returns:
             Dict con datos del precio o None si falla
         """
-        if not self._ensure_authenticated():
-            logger.error("No se pudo autenticar en Portfolio Personal")
-            return None
+        # Intentar autenticación si es posible
+        self._ensure_authenticated()
         
         try:
             url = f"{self.base_url}/api/{self.api_version}/MarketData/Current"
@@ -136,7 +169,9 @@ class PortfolioPersonalClient:
             }
             
             headers = self._get_headers()
-            response = self.session.get(url, params=params, headers=headers, timeout=10)
+            # Usar requests directamente en lugar de session para tener control sobre headers
+            verify_ssl = self.session.verify if hasattr(self.session, 'verify') else True
+            response = requests.get(url, params=params, headers=headers, timeout=10, verify=verify_ssl)
             response.raise_for_status()
             
             data = response.json()
@@ -174,9 +209,8 @@ class PortfolioPersonalClient:
         Returns:
             DataFrame con historial de precios
         """
-        if not self._ensure_authenticated():
-            logger.error("No se pudo autenticar en Portfolio Personal")
-            return pd.DataFrame()
+        # Intentar autenticación si es posible
+        self._ensure_authenticated()
         
         try:
             date_to = datetime.now()
@@ -192,7 +226,8 @@ class PortfolioPersonalClient:
             }
             
             headers = self._get_headers()
-            response = self.session.get(url, params=params, headers=headers, timeout=30)
+            verify_ssl = self.session.verify if hasattr(self.session, 'verify') else True
+            response = requests.get(url, params=params, headers=headers, timeout=30, verify=verify_ssl)
             response.raise_for_status()
             
             data = response.json()
@@ -243,9 +278,8 @@ class PortfolioPersonalClient:
         Returns:
             Lista de instrumentos encontrados
         """
-        if not self._ensure_authenticated():
-            logger.error("No se pudo autenticar en Portfolio Personal")
-            return []
+        # Intentar autenticación si es posible
+        self._ensure_authenticated()
         
         try:
             url = f"{self.base_url}/api/{self.api_version}/MarketData/SearchInstrument"
@@ -261,7 +295,8 @@ class PortfolioPersonalClient:
                 params['Type'] = instrument_type
             
             headers = self._get_headers()
-            response = self.session.get(url, params=params, headers=headers, timeout=10)
+            verify_ssl = self.session.verify if hasattr(self.session, 'verify') else True
+            response = requests.get(url, params=params, headers=headers, timeout=10, verify=verify_ssl)
             response.raise_for_status()
             
             return response.json()
