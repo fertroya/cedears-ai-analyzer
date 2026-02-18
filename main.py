@@ -86,11 +86,48 @@ def main():
         logger.info("="*60)
         
         from src.data_collector.scrapers.investing_scraper import InvestingScraper
+        from src.data_collector.scrapers.portfolio_personal_client import PortfolioPersonalClient
         from src.data_collector.scrapers.news_scraper import NewsScraper
         
-        scraper = InvestingScraper(
-            delay=config.get('scraping', {}).get('delay_between_requests', 2)
-        )
+        # Seleccionar fuente de datos según configuración
+        scraping_config = config.get('scraping', {})
+        data_source = scraping_config.get('data_source', 'investing')
+        
+        if data_source == 'portfolio_personal':
+            logger.info("Usando Portfolio Personal API como fuente de datos")
+            import os
+            pp_config = scraping_config.get('portfolio_personal', {})
+            
+            api_key = os.getenv('PORTFOLIO_PERSONAL_API_KEY')
+            api_secret = os.getenv('PORTFOLIO_PERSONAL_API_SECRET')
+            authorized_client = os.getenv('PORTFOLIO_PERSONAL_AUTHORIZED_CLIENT', 'API_CLI_REST')
+            client_key = os.getenv('PORTFOLIO_PERSONAL_CLIENT_KEY', 'pp19CliApp12')
+            
+            if not all([api_key, api_secret]):
+                logger.error("Credenciales de Portfolio Personal no configuradas en .env")
+                logger.error("Configura PORTFOLIO_PERSONAL_API_KEY y PORTFOLIO_PERSONAL_API_SECRET")
+                sys.exit(1)
+            
+            scraper = PortfolioPersonalClient(
+                api_key=api_key,
+                api_secret=api_secret,
+                authorized_client=authorized_client,
+                client_key=client_key,
+                base_url=pp_config.get('base_url', 'https://clientapi.portfoliopersonal.com'),
+                api_version=pp_config.get('api_version', '1.0'),
+                use_sandbox=pp_config.get('use_sandbox', False)
+            )
+            
+            # Intentar login
+            if not scraper.login():
+                logger.error("No se pudo autenticar en Portfolio Personal API")
+                sys.exit(1)
+        else:
+            logger.info("Usando Investing.com como fuente de datos (simulado)")
+            scraper = InvestingScraper(
+                delay=scraping_config.get('delay_between_requests', 2)
+            )
+        
         news_scraper = NewsScraper()
         
         # Obtener contexto de mercado
@@ -112,7 +149,16 @@ def main():
             try:
                 logger.info(f"Analizando {ticker}...")
                 # Obtener datos históricos
-                price_data = scraper.get_cedear_history(ticker, days=config.get('analysis', {}).get('lookback_days', 60))
+                settlement = scraping_config.get('portfolio_personal', {}).get('settlement', 'INMEDIATA') if data_source == 'portfolio_personal' else None
+                
+                if data_source == 'portfolio_personal' and hasattr(scraper, 'get_cedear_history'):
+                    price_data = scraper.get_cedear_history(
+                        ticker,
+                        days=config.get('analysis', {}).get('lookback_days', 60),
+                        settlement=settlement
+                    )
+                else:
+                    price_data = scraper.get_cedear_history(ticker, days=config.get('analysis', {}).get('lookback_days', 60))
                 
                 # Analizar
                 analysis = analyzer.analyze(ticker, price_data)

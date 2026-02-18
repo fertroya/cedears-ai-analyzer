@@ -1,8 +1,18 @@
 scraping:
+  # Fuente de datos: "portfolio_personal" (API oficial) o "investing" (simulado)
+  data_source: "portfolio_personal"  # "portfolio_personal" o "investing"
   investing_url: "https://www.investing.com/equities/argentina"
   retry_attempts: 3
   delay_between_requests: 2
   user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+  
+  # Configuración Portfolio Personal
+  portfolio_personal:
+    base_url: "https://clientapi.portfoliopersonal.com"
+    sandbox_url: "https://clientapi_sandbox.portfoliopersonal.com"
+    use_sandbox: false
+    api_version: "1.0"
+    settlement: "INMEDIATA"  # INMEDIATA, A-24HS, A-48HS, A-72HS
 
 ai:
   # Ollama es el proveedor por defecto (100% gratis, corre localmente)
